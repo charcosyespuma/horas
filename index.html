@@ -184,9 +184,9 @@ ol.small li{margin:4px 0}
   <div class="card">
     <div class="h2"><h2>🔄 Sincronizar móvil y ordenador</h2></div>
     <div class="small mute">Tus horas se guardan en el archivo <code>horas.json</code> de un repositorio de GitHub. Así todos tus dispositivos ven lo mismo.</div>
-    <label>Usuario de GitHub</label><input id="ghowner" placeholder="charcosyespuma" autocomplete="off">
-    <label>Repositorio donde guardar los datos</label><input id="ghrepo" placeholder="horas-datos" autocomplete="off">
-    <label>Token de acceso</label><input id="ghtoken" type="password" placeholder="github_pat_…" autocomplete="off">
+    <label>Usuario de GitHub</label><input id="ghowner" placeholder="charcosyespuma" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <label>Repositorio donde guardar los datos</label><input id="ghrepo" placeholder="horas-datos" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <label>Token de acceso</label><div class="row"><input id="ghtoken" type="password" placeholder="github_pat_…" autocomplete="off" autocapitalize="off" spellcheck="false"><button id="ghpaste">📋 Pegar</button><button id="ghshow" title="Mostrar">👁</button></div>
     <div class="acts"><button id="ghoff" class="danger">Desconectar</button><span class="sp"></span><button class="pri" id="ghsave">Guardar y sincronizar</button></div>
     <div id="ghstatus" class="small" style="margin-top:8px"></div>
     <details style="margin-top:10px"><summary class="small mute" style="cursor:pointer">Cómo conseguir el token</summary>
@@ -596,7 +596,15 @@ async function sync(){
 }
 function schedulePush(){if(!syncOn())return;clearTimeout(pushT);status('Cambios sin sincronizar…');pushT=setTimeout(sync,3000)}
 function renderSet(){$('ghowner').value=S.owner||'';$('ghrepo').value=S.repo||'';$('ghtoken').value=S.token||'';if(!syncOn())status('Sin sincronizar (solo en este dispositivo)')}
-$('ghsave').onclick=()=>{S={owner:$('ghowner').value.trim(),repo:$('ghrepo').value.trim().replace(/^.*\//,''),token:$('ghtoken').value.trim()};
+/* Lo que escribes se guarda al momento, por si el móvil recarga la página al cambiar de app */
+const readSet=()=>({owner:$('ghowner').value.trim(),repo:$('ghrepo').value.trim().replace(/^.*\//,''),token:$('ghtoken').value.replace(/\s/g,'')});
+for(const id of ['ghowner','ghrepo','ghtoken'])$(id).oninput=()=>{S=readSet();localStorage.setItem('mh_sync',JSON.stringify(S))};
+$('ghshow').onclick=()=>{$('ghtoken').type=$('ghtoken').type==='password'?'text':'password'};
+$('ghpaste').onclick=async()=>{try{const t=(await navigator.clipboard.readText()).replace(/\s/g,'');
+  if(!t){status('El portapapeles está vacío.',false);return}$('ghtoken').value=t;$('ghtoken').oninput();
+  status(t.startsWith('github_pat_')||t.startsWith('ghp_')?'Token pegado ('+t.length+' caracteres). Pulsa Guardar y sincronizar.':'Lo pegado no parece un token de GitHub (debería empezar por github_pat_).',!!t.match(/^(github_pat_|ghp_)/))}
+  catch(e){status('No he podido leer el portapapeles. Mantén pulsado el campo y elige Pegar.',false)}};
+$('ghsave').onclick=()=>{S=readSet();
   if(!syncOn()){status('Rellena los tres campos.',false);return}
   localStorage.setItem('mh_sync',JSON.stringify(S));sha=null;sync()};
 $('ghoff').onclick=()=>{if(!confirm('¿Dejar de sincronizar este dispositivo? Tus datos se quedan aquí y en GitHub.'))return;S={owner:S.owner};localStorage.setItem('mh_sync',JSON.stringify(S));renderSet()};
