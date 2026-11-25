@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Mis Horas</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#15171d">
+<style>
+:root{--bg:#15171d;--card:#1f222b;--card2:#272b36;--tx:#e9ebf0;--mute:#9aa0ad;--line:#313644;--acc:#5b8def;--red:#e8684a;--ok:#34b37e}
+@media (prefers-color-scheme:light){:root{--bg:#f3f4f7;--card:#fff;--card2:#eef0f4;--tx:#1c1f26;--mute:#6b7280;--line:#dfe2e8}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:env(safe-area-inset-bottom)}
+header{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.top{display:flex;align-items:center;gap:10px;max-width:900px;margin:0 auto;padding:12px 16px 0}
+.top h1{font-size:18px;margin:0;flex:1}
+#syncdot{font-size:12px;color:var(--mute)}
+nav{display:flex;gap:4px;max-width:900px;margin:0 auto;padding:8px 12px 0;overflow-x:auto}
+nav button{background:none;border:0;color:var(--mute);padding:8px 12px;border-bottom:2px solid transparent;font:inherit;cursor:pointer;white-space:nowrap}
+nav button.on{color:var(--tx);border-color:var(--acc);font-weight:600}
+main{max-width:900px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.hidden{display:none!important}
+button,.btn{white-space:nowrap;font:inherit;color:var(--tx);background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px 14px;cursor:pointer}
+button:hover{filter:brightness(1.1)}
+button.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+button.danger{color:var(--red)}
+input,select,textarea{font:inherit;color:var(--tx);background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;width:100%}
+input[type=color]{padding:0;width:34px;height:34px;border-radius:8px;cursor:pointer}
+label{display:block;font-size:13px;color:var(--mute);margin:10px 0 4px}
+.row{display:flex;gap:10px;align-items:center}
+.row>*{min-width:0}
+.row>button{flex:none}.row>input{flex:1 1 0}.row>input[type=color]{flex:none}
+.mute{color:var(--mute)}
+.small{font-size:13px}
+.dot{display:inline-block;width:11px;height:11px;border-radius:50%;flex:none}
+/* Cronómetro */
+#now{text-align:center}
+#nowproj{font-size:16px;font-weight:600;display:flex;justify-content:center;align-items:center;gap:8px}
+#clock{font-size:52px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:1px;margin:6px 0}
+#now.idle #clock{color:var(--mute)}
+#note{text-align:center;max-width:460px;margin:0 auto 12px;display:block}
+#stopbtn{background:var(--red);border-color:var(--red);color:#fff;padding:10px 34px;font-weight:600}
+#warn{color:#f2b33d;font-size:13px;margin-top:10px}
+#plist .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.pbtn{text-align:left;padding:12px;border-radius:12px;display:flex;flex-direction:column;gap:4px;border-left:5px solid var(--c)}
+.pbtn .n{font-weight:600;display:flex;justify-content:space-between;gap:6px}
+.pbtn.run{background:color-mix(in srgb,var(--c) 22%,var(--card2))}
+.h2{display:flex;justify-content:space-between;align-items:center;margin:0 0 12px;gap:10px}
+.h2 h2{font-size:16px;margin:0}
+/* Registros */
+.day{margin-bottom:14px}
+.dayh{display:flex;justify-content:space-between;font-size:13px;color:var(--mute);padding:0 4px 6px}
+.ent{display:flex;gap:10px;align-items:center;padding:10px 12px;border-top:1px solid var(--line);cursor:pointer}
+.ent:first-of-type{border-top:0}
+.ent:hover{background:var(--card2)}
+.ent .t{flex:1;min-width:0}
+.ent .t div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ent .d{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+/* Informes */
+.per{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.per button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.nav2{display:flex;align-items:center;gap:8px;margin-top:12px}
+.nav2 b{flex:1;text-align:center}
+.big{font-size:30px;font-weight:700}
+.bar{height:10px;border-radius:5px;background:var(--card2);overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%}
+.prow{padding:10px 0;border-top:1px solid var(--line)}
+.prow:first-child{border-top:0}
+svg text{fill:var(--mute);font-size:17px}
+/* Proyectos */
+.projrow{display:flex;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.projrow:first-child{border-top:0}
+.projrow input[type=text]{flex:1}
+.prj{padding:10px 0;border-top:1px solid var(--line)}
+.prj .row+.row{margin-top:8px}
+.prj select{flex:1}
+.grp+.prj{border-top:0}
+#nowtask{width:auto;max-width:100%;margin:4px auto 0;display:block;text-align:center}
+.tasks{margin-top:8px}
+.tasks summary{cursor:pointer;font-size:13px;color:var(--mute)}
+.task{display:flex;gap:8px;align-items:center;padding:6px 0 6px 6px}
+.task input[type=text]{flex:1;padding:5px 8px}
+.task input[type=checkbox]{width:18px;height:18px;flex:none;accent-color:var(--ok)}
+.task.done input[type=text]{text-decoration:line-through;color:var(--mute)}
+.task button{padding:4px 9px;flex:none}
+.sub{display:flex;gap:8px;font-size:13px;color:var(--mute);padding:3px 0 0 21px}
+.sub span:first-child{flex:1}
+.grp{font-size:12px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--mute);margin:14px 2px 8px;display:flex;align-items:center;gap:6px}
+.grp:first-child{margin-top:0}
+.cli{color:var(--mute);font-weight:400}
+.seg{display:inline-flex;gap:4px}.seg button{padding:4px 10px;font-size:13px}.seg button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+dialog{background:var(--card);color:var(--tx);border:1px solid var(--line);border-radius:16px;padding:20px;width:min(440px,94vw)}
+dialog::backdrop{background:rgba(0,0,0,.55)}
+.acts{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+.acts .sp{flex:1}
+code{background:var(--card2);padding:1px 5px;border-radius:5px;font-size:13px}
+ol.small{padding-left:20px;margin:6px 0}
+ol.small li{margin:4px 0}
+</style>
+</head>
+<body>
+<header>
+  <div class="top"><h1>⏱️ Mis Horas</h1><span id="syncdot"></span></div>
+  <nav id="tabs">
+    <button data-v="timer" class="on">Cronómetro</button>
+    <button data-v="log">Registros</button>
+    <button data-v="rep">Informes</button>
+    <button data-v="proj">Proyectos</button>
+    <button data-v="set">Ajustes</button>
+  </nav>
+</header>
+<main>
+<!-- ===== Cronómetro ===== -->
+<section id="v-timer">
+  <div class="card" id="now">
+    <div id="nowproj"></div>
+    <select id="nowtask" class="hidden" title="Tarea"></select>
+    <div id="clock">00:00:00</div>
+    <input id="note" placeholder="¿En qué estás trabajando? (opcional)">
+    <button id="stopbtn">■ Parar</button>
+    <div id="warn" class="hidden">Lleva más de 8 horas en marcha. ¿Se te olvidó pararlo? <a href="#" id="fixrun">Corregir</a></div>
+  </div>
+  <div class="card">
+    <div class="h2"><h2>Empezar a trabajar en…</h2><span class="mute small" id="todaytot"></span></div>
+    <div id="plist"></div>
+    <div class="row" style="margin-top:12px">
+      <input id="quickname" placeholder="Nuevo proyecto">
+      <select id="quickcli" style="width:auto;max-width:40%"></select>
+      <button id="quickadd">＋ Añadir</button>
+    </div>
+  </div>
+  <div class="row"><button id="manualbtn">＋ Añadir tiempo a mano</button></div>
+</section>
+
+<!-- ===== Registros ===== -->
+<section id="v-log" class="hidden">
+  <div class="card">
+    <div class="row">
+      <select id="logfilter"></select>
+      <button id="manualbtn2" style="white-space:nowrap">＋ A mano</button>
+    </div>
+  </div>
+  <div id="loglist"></div>
+  <div class="row"><button id="logmore" class="hidden">Ver más días</button></div>
+</section>
+
+<!-- ===== Informes ===== -->
+<section id="v-rep" class="hidden">
+  <div class="card">
+    <div class="per" id="pertype">
+      <button data-t="day">Día</button><button data-t="week" class="on">Semana</button><button data-t="month">Mes</button><button data-t="year">Año</button>
+    </div>
+    <div class="nav2"><button id="rprev">‹</button><b id="rlabel"></b><button id="rnext">›</button></div>
+  </div>
+  <div class="card">
+    <div class="h2"><div><div class="mute small">Total</div><div class="big" id="rtotal"></div></div><button id="csvbtn">⬇ Exportar CSV</button></div>
+    <div class="row small mute" style="margin-bottom:6px">Colores del gráfico: <span class="seg" id="rby"><button data-b="proj" class="on">Proyecto</button><button data-b="cli">Cliente</button></span></div>
+    <div id="rchart"></div>
+  </div>
+  <div class="card" id="rclicard"><div class="h2"><h2>Por cliente</h2></div><div id="rcli"></div></div>
+  <div class="card"><div class="h2"><h2>Por proyecto</h2></div><div id="rproj"></div></div>
+</section>
+
+<!-- ===== Proyectos ===== -->
+<section id="v-proj" class="hidden">
+  <div class="card">
+    <div class="h2"><h2>Clientes</h2></div>
+    <div class="row"><input id="newcli" placeholder="Nombre del cliente"><button class="pri" id="newcliadd">Añadir</button></div>
+    <div id="clilist" style="margin-top:6px"></div>
+  </div>
+  <div class="card">
+    <div class="h2"><h2>Proyectos</h2></div>
+    <div class="row"><input id="newname" placeholder="Nombre del proyecto"><select id="newpcli" style="width:auto;max-width:40%"></select><button class="pri" id="newadd">Añadir</button></div>
+  </div>
+  <div class="card"><div class="h2"><h2>Activos</h2></div><div id="projlist"></div></div>
+  <div class="card" id="archcard"><div class="h2"><h2>Archivados</h2></div><div id="archlist"></div></div>
+</section>
+
+<!-- ===== Ajustes ===== -->
+<section id="v-set" class="hidden">
+  <div class="card">
+    <div class="h2"><h2>🔄 Sincronizar móvil y ordenador</h2></div>
+    <div class="small mute">Tus horas se guardan en el archivo <code>horas.json</code> de un repositorio de GitHub. Así todos tus dispositivos ven lo mismo.</div>
+    <label>Usuario de GitHub</label><input id="ghowner" placeholder="charcosyespuma" autocomplete="off">
+    <label>Repositorio donde guardar los datos</label><input id="ghrepo" placeholder="horas-datos" autocomplete="off">
+    <label>Token de acceso</label><input id="ghtoken" type="password" placeholder="github_pat_…" autocomplete="off">
+    <div class="acts"><button id="ghoff" class="danger">Desconectar</button><span class="sp"></span><button class="pri" id="ghsave">Guardar y sincronizar</button></div>
+    <div id="ghstatus" class="small" style="margin-top:8px"></div>
+    <details style="margin-top:10px"><summary class="small mute" style="cursor:pointer">Cómo conseguir el token</summary>
+      <ol class="small">
+        <li>Te recomiendo un repositorio <b>privado</b> solo para los datos (por ejemplo <code>horas-datos</code>), para que tus horas no sean públicas.</li>
+        <li>En GitHub: tu foto → Settings → Developer settings → Personal access tokens → <b>Fine-grained tokens</b> → Generate new token.</li>
+        <li>En <i>Repository access</i> elige <b>Only select repositories</b> y marca ese repositorio.</li>
+        <li>En <i>Permissions</i> → <b>Contents</b>: <b>Read and write</b>. Genera el token y pégalo aquí. Hay que pegarlo una vez en cada dispositivo.</li>
+      </ol>
+    </details>
+  </div>
+  <div class="card">
+    <div class="h2"><h2>💾 Copia de seguridad</h2></div>
+    <div class="row"><button id="expjson">⬇ Descargar copia</button><button id="impjson">⬆ Cargar copia</button></div>
+    <input type="file" id="impfile" accept=".json,application/json" class="hidden">
+    <div class="small mute" style="margin-top:8px">Cargar una copia la mezcla con lo que ya tienes; no borra nada.</div>
+  </div>
+  <div class="card small mute">
+    <b style="color:var(--tx)">Usarla como programa de escritorio:</b> abre esta página en Chrome o Edge y pulsa el icono de instalar (⊕) en la barra de direcciones, o ⋮ → <i>Instalar Mis Horas</i>. Se abrirá en su propia ventana, con icono en la barra de tareas.
+  </div>
+</section>
+</main>
+
+<!-- ===== Editor de registro ===== -->
+<dialog id="dlg">
+  <h3 id="dlgtitle" style="margin:0 0 6px">Registro</h3>
+  <label>Proyecto</label><select id="eproj"></select>
+  <div id="etaskbox"><label>Tarea</label><select id="etask"></select></div>
+  <label>Fecha</label><input type="date" id="edate">
+  <div class="row">
+    <div style="flex:1"><label>Inicio</label><input type="time" id="estart"></div>
+    <div style="flex:1"><label>Fin</label><input type="time" id="eend"></div>
+  </div>
+  <div class="small mute" id="ehint" style="margin-top:6px"></div>
+  <label>Nota</label><input id="enote" placeholder="Opcional">
+  <div class="acts"><button class="danger" id="edel">Eliminar</button><span class="sp"></span><button id="ecancel">Cancelar</button><button class="pri" id="esave">Guardar</button></div>
+</dialog>
+
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const COLORS=['#5b8def','#e8684a','#34b37e','#f2b33d','#a66cf0','#e45aa0','#2bb5c7','#7fb33a','#d9823b','#8a9099'];
+const pad=n=>String(n).padStart(2,'0');
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+
+/* ===== Datos ===== */
+let D=(()=>{try{const d=JSON.parse(localStorage.getItem('mh_data'));if(d&&Array.isArray(d.projects))return d}catch(e){}return{projects:[],entries:[]}})();
+function save(){try{localStorage.setItem('mh_data',JSON.stringify(D))}catch(e){}schedulePush()}
+const touch=o=>{o.updated=Date.now();return o};
+if(!Array.isArray(D.clients))D.clients=[];
+if(!Array.isArray(D.tasks))D.tasks=[];
+const KINDS=['clients','projects','tasks','entries'];
+const taskById=id=>id&&D.tasks.find(t=>t.id===id&&!t.deleted);
+const tasksOf=(pid,keep)=>D.tasks.filter(t=>t.pid===pid&&!t.deleted&&(!t.done||t.id===keep));
+const taskOpts=(pid,sel)=>'<option value="">Sin tarea</option>'+tasksOf(pid,sel).map(t=>`<option value="${t.id}"${t.id===sel?' selected':''}>${esc(t.name)}</option>`).join('');
+function newTask(pid,name){name=(name||'').trim();if(!name)return null;const t=touch({id:uid(),pid,name,done:false});D.tasks.push(t);save();return t}
+const label=e=>{const t=taskById(e.tid);return t?' › '+t.name:''};
+const clis=()=>D.clients.filter(c=>!c.deleted).sort((a,b)=>a.name.localeCompare(b.name,'es'));
+const cliById=id=>id&&D.clients.find(c=>c.id===id&&!c.deleted);
+const cliOf=p=>cliById(p&&p.cid);
+const SIN={id:'',name:'Sin cliente',color:'#8a9099'};
+/* Agrupa proyectos por cliente: clientes por orden alfabético y "Sin cliente" al final */
+function byClient(ps){const g=new Map();for(const c of clis())g.set(c.id,{c,ps:[]});g.set('',{c:SIN,ps:[]});
+  for(const p of ps)(g.get(cliOf(p)?p.cid:'')).ps.push(p);return[...g.values()].filter(x=>x.ps.length)}
+const cliOpts=(sel,none='Sin cliente')=>`<option value="">${none}</option>`+clis().map(c=>`<option value="${c.id}"${c.id===sel?' selected':''}>${esc(c.name)}</option>`).join('');
+const projOpts=ps=>{const gs=byClient(ps);return gs.length===1&&!gs[0].c.id?gs[0].ps.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join(''):
+  gs.map(g=>`<optgroup label="${esc(g.c.name)}">${g.ps.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</optgroup>`).join('')};
+const projs=()=>D.projects.filter(p=>!p.deleted);
+const active=()=>projs().filter(p=>!p.archived);
+const ents=()=>D.entries.filter(e=>!e.deleted&&projById(e.pid));
+const projById=id=>D.projects.find(p=>p.id===id&&!p.deleted);
+const running=()=>ents().find(e=>!e.end);
+
+/* ===== Tiempo ===== */
+const dayStart=t=>{const d=new Date(t);d.setHours(0,0,0,0);return+d};
+const addDays=(t,n)=>{const d=new Date(t);d.setDate(d.getDate()+n);return+d};
+const weekStart=t=>{const d=new Date(dayStart(t));return addDays(+d,-((d.getDay()+6)%7))};
+const overlap=(e,a,b)=>Math.max(0,Math.min(e.end||Date.now(),b)-Math.max(e.start,a));
+const clock=ms=>{const s=Math.max(0,Math.floor(ms/1000));return pad(Math.floor(s/3600))+':'+pad(Math.floor(s/60)%60)+':'+pad(s%60)};
+const fmtH=ms=>{const m=Math.round(ms/60000),h=Math.floor(m/60);return h?`${h} h ${pad(m%60)} min`:`${m} min`};
+const hm=t=>{const d=new Date(t);return pad(d.getHours())+':'+pad(d.getMinutes())};
+const dateIn=t=>{const d=new Date(t);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
+const sumRange=(pid,a,b)=>ents().filter(e=>!pid||e.pid===pid).reduce((s,e)=>s+overlap(e,a,b),0);
+
+/* ===== Acciones ===== */
+function newProject(name,cid=''){
+  name=name.trim();if(!name)return null;
+  const used=new Set(projs().map(p=>p.color));
+  const color=COLORS.find(c=>!used.has(c))||COLORS[projs().length%COLORS.length];
+  const p=touch({id:uid(),name,color,cid,archived:false});
+  D.projects.push(p);save();return p;
+}
+function newClient(name){
+  name=name.trim();if(!name)return null;
+  const used=new Set(clis().map(c=>c.color));
+  const c=touch({id:uid(),name,color:COLORS.find(x=>!used.has(x))||COLORS[clis().length%COLORS.length]});
+  D.clients.push(c);save();return c;
+}
+function start(pid,tid=''){
+  const now=Date.now(),r=running();
+  if(r&&r.pid===pid&&(r.tid||'')===tid)return;
+  for(const e of ents())if(!e.end){e.end=now;touch(e)}
+  D.entries.push(touch({id:uid(),pid,tid,start:now,end:null,note:''}));
+  save();render();
+}
+function stop(){const now=Date.now();for(const e of ents())if(!e.end){e.end=now;touch(e)}save();render()}
+
+/* ===== Navegación ===== */
+let view='timer';
+$('tabs').onclick=e=>{const v=e.target.dataset.v;if(!v)return;view=v;
+  for(const b of $('tabs').children)b.classList.toggle('on',b.dataset.v===v);
+  for(const s of ['timer','log','rep','proj','set'])$('v-'+s).classList.toggle('hidden',s!==v);
+  render();};
+
+function render(){
+  if(view==='timer')renderTimer();
+  if(view==='log')renderLog();
+  if(view==='rep')renderRep();
+  if(view==='proj')renderProj();
+  if(view==='set')renderSet();
+}
+
+/* ===== Cronómetro ===== */
+function renderTimer(){
+  const r=running(),t0=dayStart(Date.now()),t1=addDays(t0,1);
+  const lastUse=new Map();for(const e of ents())lastUse.set(e.pid,Math.max(lastUse.get(e.pid)||0,e.start));
+  const list=active().sort((a,b)=>(lastUse.get(b.id)||b.updated||0)-(lastUse.get(a.id)||a.updated||0));
+  const btn=p=>`<button class="pbtn${r&&r.pid===p.id?' run':''}" style="--c:${p.color}" data-p="${p.id}">
+    <span class="n"><span>${esc(p.name)}</span><span>${r&&r.pid===p.id?'⏺':'▶'}</span></span>
+    <span class="mute small" data-today="${p.id}">Hoy: ${fmtH(sumRange(p.id,t0,t1))}</span></button>`;
+  const gs=byClient(list),plain=gs.length===1&&!gs[0].c.id;
+  $('plist').innerHTML=!list.length?'<div class="mute">Crea tu primer proyecto aquí abajo.</div>':
+    plain?`<div class="pgrid">${list.map(btn).join('')}</div>`:
+    gs.map(g=>`<div class="grp">${g.c.id?`<span class="dot" style="background:${g.c.color}"></span>`:''}${esc(g.c.name)}</div><div class="pgrid">${g.ps.map(btn).join('')}</div>`).join('');
+  const qc=$('quickcli').value;$('quickcli').innerHTML=cliOpts(qc);$('quickcli').classList.toggle('hidden',!clis().length);
+  $('note').value=r?r.note||'':'';
+  if(r)$('nowtask').innerHTML=taskOpts(r.pid,r.tid||'')+'<option value="__new">＋ Nueva tarea…</option>';
+  $('nowtask').classList.toggle('hidden',!r);
+  tick();
+}
+function tick(){
+  const r=running(),p=r&&projById(r.pid),t0=dayStart(Date.now()),t1=addDays(t0,1);
+  $('now').classList.toggle('idle',!r);
+  $('nowproj').innerHTML=r?`<span class="dot" style="background:${p.color}"></span>${esc(p.name)}${cliOf(p)?`<span class="cli">· ${esc(cliOf(p).name)}</span>`:''}`:'<span class="mute">Sin cronómetro en marcha — elige un proyecto</span>';
+  $('clock').textContent=clock(r?Date.now()-r.start:0);
+  $('note').classList.toggle('hidden',!r);$('stopbtn').classList.toggle('hidden',!r);
+  $('warn').classList.toggle('hidden',!(r&&Date.now()-r.start>8*3600e3));
+  document.title=r?`${clock(Date.now()-r.start)} · ${p.name}${label(r)}`:'Mis Horas';
+  $('todaytot').textContent='Hoy: '+fmtH(sumRange(null,t0,t1));
+  if(r){const el=document.querySelector(`[data-today="${r.pid}"]`);if(el)el.textContent='Hoy: '+fmtH(sumRange(r.pid,t0,t1))}
+}
+setInterval(()=>{if(view==='timer')tick();else if(running())document.title=clock(Date.now()-running().start)+' · '+projById(running().pid).name},1000);
+$('plist').onclick=e=>{const b=e.target.closest('[data-p]');if(b)start(b.dataset.p)};
+$('stopbtn').onclick=stop;
+/* Cambiar de tarea: si ya llevaba más de un minuto, se cierra ese tramo y empieza uno nuevo con la otra tarea */
+$('nowtask').onchange=()=>{const r=running();if(!r)return;let v=$('nowtask').value;
+  if(v==='__new'){const t=newTask(r.pid,prompt('Nombre de la nueva tarea:'));if(!t){renderTimer();return}v=t.id}
+  if(Date.now()-r.start<60e3){r.tid=v;touch(r);save();render()}else start(r.pid,v)};
+$('note').oninput=()=>{const r=running();if(r){r.note=$('note').value;touch(r);save()}};
+$('fixrun').onclick=e=>{e.preventDefault();openEdit(running())};
+const quick=()=>{const p=newProject($('quickname').value,$('quickcli').value);if(p){$('quickname').value='';render()}};
+$('quickadd').onclick=quick;$('quickname').onkeydown=e=>{if(e.key==='Enter')quick()};
+$('manualbtn').onclick=$('manualbtn2').onclick=()=>openEdit(null);
+
+/* ===== Editor ===== */
+let editing=null;
+function openEdit(e){
+  if(!projs().length){alert('Primero crea un proyecto.');return}
+  editing=e;
+  const ps=e?projs().filter(p=>!p.archived||p.id===e.pid):active();
+  $('eproj').innerHTML=projOpts(ps);
+  const fillTasks=sel=>{const pid=$('eproj').value;$('etask').innerHTML=taskOpts(pid,sel)+'<option value="__new">＋ Nueva tarea…</option>';$('etask').value=sel||''};
+  $('eproj').onchange=()=>fillTasks('');
+  $('etask').onchange=()=>{if($('etask').value!=='__new')return;const t=newTask($('eproj').value,prompt('Nombre de la nueva tarea:'));fillTasks(t?t.id:'')};
+  const now=Date.now();
+  if(e){$('eproj').value=e.pid;$('edate').value=dateIn(e.start);$('estart').value=hm(e.start);$('eend').value=e.end?hm(e.end):'';$('enote').value=e.note||''}
+  else{$('eproj').value=ps[0]?.id||'';$('edate').value=dateIn(now);$('estart').value=hm(now-3600e3);$('eend').value=hm(now);$('enote').value=''}
+  fillTasks(e?(taskById(e.tid)?e.tid:''):'');
+  $('dlgtitle').textContent=e?'Editar registro':'Añadir tiempo a mano';
+  $('edel').classList.toggle('hidden',!e);
+  $('ehint').textContent=e&&!e.end?'En marcha. Si pones una hora de fin, se parará.':'Si la hora de fin es menor que la de inicio, se entiende que acabó al día siguiente.';
+  $('dlg').showModal();
+}
+$('ecancel').onclick=()=>$('dlg').close();
+$('edel').onclick=()=>{if(!editing||!confirm('¿Eliminar este registro?'))return;editing.deleted=true;touch(editing);save();$('dlg').close();render()};
+$('esave').onclick=()=>{
+  const d=$('edate').value,s=$('estart').value,f=$('eend').value;
+  if(!d||!s){alert('Pon la fecha y la hora de inicio.');return}
+  const st=+new Date(`${d}T${s}`);let en=null;
+  if(f){en=+new Date(`${d}T${f}`);if(en<=st)en=addDays(en,1)}
+  else if(!editing||editing.end){alert('Pon la hora de fin.');return}
+  if(en&&en-st>24*3600e3){alert('Un registro no puede durar más de 24 horas.');return}
+  if(!en&&st>Date.now()){alert('La hora de inicio no puede estar en el futuro.');return}
+  const e=editing||{id:uid()};
+  Object.assign(e,{pid:$('eproj').value,tid:$('etask').value==='__new'?'':$('etask').value,start:st,end:en,note:$('enote').value.trim()});touch(e);
+  if(!editing)D.entries.push(e);
+  save();$('dlg').close();render();
+};
+
+/* ===== Registros ===== */
+let logDays=14;
+function renderLog(){
+  const f=$('logfilter').value;
+  $('logfilter').innerHTML='<option value="">Todo</option>'+(clis().length?'<optgroup label="Clientes">'+clis().map(c=>`<option value="c:${c.id}">${esc(c.name)}</option>`).join('')+'<option value="c:">Sin cliente</option></optgroup>':'')
+    +'<optgroup label="Proyectos">'+projs().map(p=>`<option value="p:${p.id}">${esc(p.name)}${p.archived?' (archivado)':''}</option>`).join('')+'</optgroup>';
+  $('logfilter').value=f;if($('logfilter').value!==f)$('logfilter').value='';
+  const fv=$('logfilter').value,ok=e=>{if(!fv)return true;const p=projById(e.pid);
+    return fv[0]==='p'?e.pid===fv.slice(2):(cliOf(p)?p.cid:'')===fv.slice(2)};
+  const list=ents().filter(ok).sort((a,b)=>b.start-a.start);
+  const groups=new Map();for(const e of list){const k=dayStart(e.start);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(e)}
+  const keys=[...groups.keys()];
+  $('loglist').innerHTML=keys.length?keys.slice(0,logDays).map(k=>{
+    const es=groups.get(k),tot=es.reduce((s,e)=>s+((e.end||Date.now())-e.start),0);
+    return `<div class="day"><div class="dayh"><span>${cap(new Date(k).toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'}))}</span><b>${fmtH(tot)}</b></div><div class="card" style="padding:0;overflow:hidden">${
+      es.map(e=>{const p=projById(e.pid);return `<div class="ent" data-e="${e.id}"><span class="dot" style="background:${p.color}"></span>
+      <div class="t"><div><b>${esc(p.name)}</b>${taskById(e.tid)?' › '+esc(taskById(e.tid).name):''}${cliOf(p)?` <span class="cli small">· ${esc(cliOf(p).name)}</span>`:''}${e.note?' · <span class="mute">'+esc(e.note)+'</span>':''}</div><div class="mute small">${hm(e.start)} – ${e.end?hm(e.end):'en marcha'}</div></div>
+      <span class="d">${e.end?fmtH(e.end-e.start):'⏺ '+clock(Date.now()-e.start)}</span></div>`}).join('')}</div></div>`}).join('')
+    :'<div class="card mute">Todavía no hay registros.</div>';
+  $('logmore').classList.toggle('hidden',keys.length<=logDays);
+}
+$('logfilter').onchange=()=>{logDays=14;renderLog()};
+$('logmore').onclick=()=>{logDays+=30;renderLog()};
+$('loglist').onclick=ev=>{const r=ev.target.closest('[data-e]');if(r)openEdit(D.entries.find(e=>e.id===r.dataset.e))};
+
+/* ===== Informes ===== */
+const rp={type:'week',off:0,by:'proj'};
+function period(){
+  const n=Date.now(),d=new Date(n);let a,b,label;
+  if(rp.type==='day'){a=addDays(dayStart(n),rp.off);b=addDays(a,1);label=new Date(a).toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
+  if(rp.type==='week'){a=addDays(weekStart(n),7*rp.off);b=addDays(a,7);const o={day:'numeric',month:'short'};label=new Date(a).toLocaleDateString('es-ES',o)+' – '+new Date(addDays(b,-1)).toLocaleDateString('es-ES',{...o,year:'numeric'})}
+  if(rp.type==='month'){a=+new Date(d.getFullYear(),d.getMonth()+rp.off,1);const x=new Date(a);b=+new Date(x.getFullYear(),x.getMonth()+1,1);label=x.toLocaleDateString('es-ES',{month:'long',year:'numeric'})}
+  if(rp.type==='year'){a=+new Date(d.getFullYear()+rp.off,0,1);b=+new Date(d.getFullYear()+rp.off+1,0,1);label=String(d.getFullYear()+rp.off)}
+  return{a,b,label};
+}
+function buckets(a,b){
+  const out=[];
+  if(rp.type==='year'){const y=new Date(a).getFullYear();for(let m=0;m<12;m++)out.push([+new Date(y,m,1),+new Date(y,m+1,1),new Date(y,m,1).toLocaleDateString('es-ES',{month:'short'}).replace('.','')])}
+  else if(rp.type!=='day'){for(let t=a;t<b;t=addDays(t,1)){const d=new Date(t);out.push([t,addDays(t,1),rp.type==='week'?d.toLocaleDateString('es-ES',{weekday:'short'}).replace('.',''):String(d.getDate())])}}
+  return out;
+}
+function taskRows(p,a,b){
+  const m=new Map();for(const e of ents())if(e.pid===p.id){const v=overlap(e,a,b);if(v){const k=taskById(e.tid)?e.tid:'';m.set(k,(m.get(k)||0)+v)}}
+  if(!m.size||(m.size===1&&m.has('')))return'';
+  return [...m].sort((x,y)=>y[1]-x[1]).map(([k,v])=>`<div class="sub"><span>${k?esc(taskById(k).name):'Sin tarea'}</span><span>${fmtH(v)}</span></div>`).join('');
+}
+function renderRep(){
+  const{a,b,label}=period();
+  $('rlabel').textContent=cap(label);
+  for(const x of $('pertype').children)x.classList.toggle('on',x.dataset.t===rp.type);
+  const total=sumRange(null,a,b);$('rtotal').textContent=fmtH(total);
+  const ps=projs().map(p=>({p,t:sumRange(p.id,a,b)})).filter(x=>x.t>0).sort((x,y)=>y.t-x.t);
+  const barRow=(color,name,t)=>`<div class="prow"><div class="row"><span class="dot" style="background:${color}"></span><span style="flex:1">${name}</span><b>${fmtH(t)}</b><span class="mute small" style="width:42px;text-align:right">${Math.round(t/total*100)}%</span></div><div class="bar"><i style="width:${t/total*100}%;background:${color}"></i></div></div>`;
+  const cs=[...clis(),SIN].map(c=>({c,t:ps.filter(x=>(cliOf(x.p)?x.p.cid:'')===c.id).reduce((s,x)=>s+x.t,0)})).filter(x=>x.t>0).sort((x,y)=>y.t-x.t);
+  $('rclicard').classList.toggle('hidden',!clis().length);$('rby').parentNode.classList.toggle('hidden',!clis().length);
+  if(!clis().length)rp.by='proj';
+  for(const x of $('rby').children)x.classList.toggle('on',x.dataset.b===rp.by);
+  $('rcli').innerHTML=cs.length?cs.map(({c,t})=>barRow(c.color,esc(c.name),t)).join(''):'<div class="mute">Sin tiempo registrado en este periodo.</div>';
+  $('rproj').innerHTML=ps.length?ps.map(({p,t})=>`<div class="prow"><div class="row"><span class="dot" style="background:${p.color}"></span><span style="flex:1">${esc(p.name)}${cliOf(p)?` <span class="cli small">· ${esc(cliOf(p).name)}</span>`:''}</span><b>${fmtH(t)}</b><span class="mute small" style="width:42px;text-align:right">${Math.round(t/total*100)}%</span></div><div class="bar"><i style="width:${t/total*100}%;background:${p.color}"></i></div>${taskRows(p,a,b)}</div>`).join('')
+    :'<div class="mute">Sin tiempo registrado en este periodo.</div>';
+  // gráfico apilado
+  const bk=buckets(a,b);
+  if(!bk.length||!total){$('rchart').innerHTML='';return}
+  const W=700,H=230,L=48,B=28,T=10,cw=(W-L)/bk.length,bw=Math.max(3,cw*.68);
+  const vals=bk.map(([x,y])=>rp.by==='cli'
+    ?cs.map(({c})=>({c:c.color,v:ps.filter(o=>(cliOf(o.p)?o.p.cid:'')===c.id).reduce((s,o)=>s+sumRange(o.p.id,x,y),0)}))
+    :ps.map(({p})=>({c:p.color,v:sumRange(p.id,x,y)})));
+  const maxH=Math.max(1,...vals.map(v=>v.reduce((s,o)=>s+o.v,0)/3600e3));
+  const step=maxH<=4?1:maxH<=10?2:maxH<=40?10:maxH<=100?25:maxH<=200?50:100,top=Math.ceil(maxH/step)*step;
+  const y=h=>T+(H-T-B)*(1-h/top);
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Horas por ${rp.type==='year'?'mes':'día'}">`;
+  for(let g=0;g<=top;g+=step)s+=`<line x1="${L}" x2="${W}" y1="${y(g)}" y2="${y(g)}" stroke="var(--line)"/><text x="${L-6}" y="${y(g)+4}" text-anchor="end">${g} h</text>`;
+  bk.forEach(([,,lab],i)=>{let acc=0;const x=L+i*cw+(cw-bw)/2;
+    for(const o of vals[i]){if(!o.v)continue;const h0=acc/3600e3,h1=(acc+=o.v)/3600e3;s+=`<rect x="${x}" y="${y(h1)}" width="${bw}" height="${Math.max(0,y(h0)-y(h1)-1)}" rx="2" fill="${o.c}"><title>${lab}: ${fmtH(o.v)}</title></rect>`}
+    if(bk.length<=12||i%3===0)s+=`<text x="${x+bw/2}" y="${H-6}" text-anchor="middle">${lab}</text>`});
+  $('rchart').innerHTML=s+'</svg>';
+}
+$('pertype').onclick=e=>{const t=e.target.dataset.t;if(t){rp.type=t;rp.off=0;renderRep()}};
+$('rby').onclick=e=>{const b=e.target.dataset.b;if(b){rp.by=b;renderRep()}};
+$('rprev').onclick=()=>{rp.off--;renderRep()};$('rnext').onclick=()=>{rp.off++;renderRep()};
+$('csvbtn').onclick=()=>{
+  const{a,b,label}=period();
+  const rows=ents().filter(e=>overlap(e,a,b)>0).sort((x,y)=>x.start-y.start);
+  const q=v=>'"'+String(v).replace(/"/g,'""')+'"';
+  const lines=['Fecha;Cliente;Proyecto;Tarea;Inicio;Fin;Horas;Nota',...rows.map(e=>[new Date(e.start).toLocaleDateString('es-ES'),q(cliOf(projById(e.pid))?.name||''),q(projById(e.pid).name),q(taskById(e.tid)?.name||''),hm(e.start),e.end?hm(e.end):'',(((e.end||Date.now())-e.start)/3600e3).toFixed(2).replace('.',','),q(e.note||'')].join(';'))];
+  download('﻿'+lines.join('\r\n'),`horas-${label.replace(/[^\wáéíóúñ-]+/gi,'-')}.csv`,'text/csv');
+};
+function download(text,name,type){const u=URL.createObjectURL(new Blob([text],{type}));const l=document.createElement('a');l.href=u;l.download=name;l.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
+
+/* ===== Proyectos ===== */
+const openTasks=new Set();
+function taskBox(p){
+  const all=D.tasks.filter(t=>t.pid===p.id&&!t.deleted).sort((x,y)=>(x.done-y.done)||(x.updated-y.updated));
+  const tt=new Map();for(const e of ents())if(e.pid===p.id&&e.tid)tt.set(e.tid,(tt.get(e.tid)||0)+((e.end||Date.now())-e.start));
+  const n=all.filter(t=>!t.done).length;
+  return `<details class="tasks" data-p="${p.id}"${openTasks.has(p.id)?' open':''}><summary>Tareas${all.length?` (${n} pendiente${n===1?'':'s'}${all.length>n?`, ${all.length-n} hecha${all.length-n===1?'':'s'}`:''})`:''}</summary>
+    ${all.map(t=>`<div class="task${t.done?' done':''}" data-t="${t.id}"><input type="checkbox" data-a="tdone"${t.done?' checked':''} title="Hecha"><input type="text" value="${esc(t.name)}" data-a="tname">
+      <span class="mute small" style="white-space:nowrap">${fmtH(tt.get(t.id)||0)}</span>${t.done||p.archived?'':'<button data-a="tgo" title="Empezar con esta tarea">▶</button>'}<button data-a="tdel" class="danger" title="Eliminar tarea">✕</button></div>`).join('')}
+    <div class="row" style="margin-top:6px;padding-left:6px"><input placeholder="Nueva tarea" data-a="tnew"><button data-a="tadd">＋</button></div></details>`;
+}
+function renderProj(){
+  const totals=new Map();for(const e of ents())totals.set(e.pid,(totals.get(e.pid)||0)+((e.end||Date.now())-e.start));
+  const hasC=clis().length;
+  const row=p=>`<div class="prj" data-p="${p.id}">
+    <div class="row"><input type="color" value="${p.color}" data-a="color"><input type="text" value="${esc(p.name)}" data-a="name"><span class="mute small" style="white-space:nowrap">${fmtH(totals.get(p.id)||0)}</span></div>
+    <div class="row">${hasC?`<select data-a="cli" title="Cliente">${cliOpts(cliOf(p)?p.cid:'')}</select>`:'<span style="flex:1"></span>'}
+    <button data-a="arch">${p.archived?'↩ Recuperar':'🗄 Archivar'}</button><button data-a="del" class="danger" title="Eliminar">✕</button></div>${taskBox(p)}</div>`;
+  const act=active(),arch=projs().filter(p=>p.archived);
+  const grouped=ps=>{const gs=byClient(ps);return gs.length===1&&!gs[0].c.id?ps.map(row).join(''):gs.map(g=>`<div class="grp" style="margin-top:14px">${g.c.id?`<span class="dot" style="background:${g.c.color}"></span>`:''}${esc(g.c.name)}</div>`+g.ps.map(row).join('')).join('')};
+  $('projlist').innerHTML=grouped(act)||'<div class="mute">No hay proyectos activos.</div>';
+  const nc=$('newpcli').value;$('newpcli').innerHTML=cliOpts(nc);$('newpcli').classList.toggle('hidden',!clis().length);
+  const np=new Map();for(const x of active())if(cliOf(x))np.set(x.cid,(np.get(x.cid)||0)+1);
+  $('clilist').innerHTML=clis().map(c=>`<div class="projrow" data-c="${c.id}"><input type="color" value="${c.color}" data-a="color"><input type="text" value="${esc(c.name)}" data-a="name">
+    <span class="mute small" style="white-space:nowrap">${np.get(c.id)||0} proy.</span><button data-a="del" class="danger" title="Eliminar">✕</button></div>`).join('')
+    ||'<div class="mute small" style="margin-top:6px">Opcional: crea clientes para agrupar tus proyectos.</div>';
+  $('archlist').innerHTML=grouped(arch);$('archcard').classList.toggle('hidden',!arch.length);
+}
+const addP=()=>{if(newProject($('newname').value,$('newpcli').value)){$('newname').value='';renderProj()}};
+$('newadd').onclick=addP;$('newname').onkeydown=e=>{if(e.key==='Enter')addP()};
+for(const id of ['projlist','archlist']){
+  $(id).addEventListener('toggle',e=>{const d=e.target;if(d.classList?.contains('tasks')){if(d.open)openTasks.add(d.dataset.p);else openTasks.delete(d.dataset.p)}},true);
+  $(id).addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.dataset.a==='tnew')e.target.nextElementSibling.click()});
+  $(id).onchange=e=>{const a=e.target.dataset.a,p=projById(e.target.closest('[data-p]')?.dataset.p);if(!p)return;
+    const t=taskById(e.target.closest('[data-t]')?.dataset.t);
+    if(t&&a==='tdone'){t.done=e.target.checked;touch(t);save();renderProj();return}
+    if(t&&a==='tname'){if(e.target.value.trim()){t.name=e.target.value.trim();touch(t);save()}return}
+    if(a==='tnew')return;
+    if(a==='color')p.color=e.target.value;if(a==='name'&&e.target.value.trim())p.name=e.target.value.trim();
+    if(a==='cli'){p.cid=e.target.value;touch(p);save();renderProj();return}touch(p);save()};
+  $(id).onclick=e=>{const a=e.target.dataset.a,p=projById(e.target.closest('[data-p]')?.dataset.p);if(!p)return;
+    const t=taskById(e.target.closest('[data-t]')?.dataset.t);
+    if(a==='tadd'){const inp=e.target.previousElementSibling;if(newTask(p.id,inp.value)){openTasks.add(p.id);renderProj();const box=document.querySelector(`#${id} details[data-p="${p.id}"] [data-a=tnew]`);if(box)box.focus()}return}
+    if(t&&a==='tgo'){start(p.id,t.id);$('tabs').querySelector('[data-v=timer]').click();return}
+    if(t&&a==='tdel'){if(!confirm(`¿Eliminar la tarea "${t.name}"? El tiempo registrado se queda en el proyecto, como "Sin tarea".`))return;t.deleted=true;touch(t);save();renderProj();return}
+    if(a==='arch'){const r=running();if(r&&r.pid===p.id&&!p.archived)stop();p.archived=!p.archived;touch(p);save();renderProj()}
+    if(a==='del'){if(!confirm(`¿Eliminar "${p.name}" y todo su tiempo registrado? Si solo quieres quitarlo de la lista, mejor archívalo.`))return;
+      p.deleted=true;touch(p);for(const x of D.entries)if(x.pid===p.id&&!x.deleted){x.deleted=true;touch(x)}save();renderProj()}};
+}
+
+const addC=()=>{if(newClient($('newcli').value)){$('newcli').value='';renderProj()}};
+$('newcliadd').onclick=addC;$('newcli').onkeydown=e=>{if(e.key==='Enter')addC()};
+$('clilist').onchange=e=>{const a=e.target.dataset.a,c=cliById(e.target.closest('[data-c]')?.dataset.c);if(!c)return;
+  if(a==='color')c.color=e.target.value;if(a==='name'&&e.target.value.trim())c.name=e.target.value.trim();touch(c);save();renderProj()};
+$('clilist').onclick=e=>{const c=cliById(e.target.closest('[data-c]')?.dataset.c);if(!c||e.target.dataset.a!=='del')return;
+  if(!confirm(`¿Eliminar el cliente "${c.name}"? Sus proyectos y su tiempo no se borran: pasan a "Sin cliente".`))return;
+  c.deleted=true;touch(c);for(const p of D.projects)if(p.cid===c.id){p.cid='';touch(p)}save();renderProj()};
+
+/* ===== Copia de seguridad ===== */
+$('expjson').onclick=()=>download(JSON.stringify(D,null,1),`mis-horas-${dateIn(Date.now())}.json`,'application/json');
+$('impjson').onclick=()=>$('impfile').click();
+$('impfile').onchange=async()=>{const f=$('impfile').files[0];if(!f)return;
+  try{const d=JSON.parse(await f.text());if(!Array.isArray(d.projects))throw 0;merge(d);save();render();alert('Copia cargada.')}catch(e){alert('Ese archivo no es una copia válida de Mis Horas.')}
+  $('impfile').value=''};
+
+/* ===== Sincronización con GitHub ===== */
+const FILE='horas.json';
+let S=(()=>{try{return JSON.parse(localStorage.getItem('mh_sync'))||{}}catch(e){return{}}})();
+if(!S.owner&&/\.github\.io$/.test(location.hostname))S.owner=location.hostname.split('.')[0];
+let sha=null,pushT=null,busy=false,again=false;
+const syncOn=()=>!!(S.owner&&S.repo&&S.token);
+const enc=s=>btoa(unescape(encodeURIComponent(s)));
+const dec=b=>decodeURIComponent(escape(atob(b.replace(/\s/g,''))));
+const canon=d=>JSON.stringify(KINDS.map(k=>(d[k]||[]).slice().sort((x,y)=>x.id<y.id?-1:1)));
+function merge(R){
+  for(const k of KINDS){
+    const m=new Map((D[k]||[]).map(x=>[x.id,x]));
+    for(const x of R[k]||[]){const l=m.get(x.id);if(!l||(x.updated||0)>(l.updated||0))m.set(x.id,x)}
+    D[k]=[...m.values()];
+  }
+}
+function status(t,ok){$('syncdot').textContent=t;$('ghstatus').textContent=t;$('ghstatus').style.color=ok===false?'var(--red)':''}
+function gh(method,body){
+  return fetch(`https://api.github.com/repos/${encodeURIComponent(S.owner)}/${encodeURIComponent(S.repo)}/contents/${FILE}`,
+    {method,cache:'no-store',headers:{Authorization:'Bearer '+S.token,Accept:'application/vnd.github+json'},body:body&&JSON.stringify(body)});
+}
+function errMsg(r){return r.status===401?'El token no es válido o ha caducado':r.status===404||r.status===403?'No encuentro el repositorio o el token no tiene permiso de escritura':'GitHub respondió '+r.status}
+async function pull(){
+  const r=await gh('GET');
+  if(r.status===404){const t=await fetch(`https://api.github.com/repos/${encodeURIComponent(S.owner)}/${encodeURIComponent(S.repo)}`,{headers:{Authorization:'Bearer '+S.token}});if(!t.ok)throw new Error(errMsg(t));sha=null;return null}
+  if(!r.ok)throw new Error(errMsg(r));
+  const j=await r.json();sha=j.sha;let c=j.content;
+  if(!c&&j.git_url){const b=await fetch(j.git_url,{cache:'no-store',headers:{Authorization:'Bearer '+S.token}});c=(await b.json()).content}
+  const R=JSON.parse(dec(c));merge(R);return R;
+}
+async function push(){
+  const body={message:'Mis Horas: '+new Date().toLocaleString('es-ES'),content:enc(JSON.stringify(D))};if(sha)body.sha=sha;
+  const r=await gh('PUT',body);
+  if(r.status===409||r.status===422)return false;
+  if(!r.ok)throw new Error(errMsg(r));
+  sha=(await r.json()).content.sha;return true;
+}
+async function sync(){
+  if(!syncOn())return;
+  if(busy){again=true;return}
+  busy=true;status('Sincronizando…');
+  try{
+    for(let i=0;i<3;i++){
+      const R=await pull();
+      try{localStorage.setItem('mh_data',JSON.stringify(D))}catch(e){}
+      if(R&&canon(R)===canon(D))break;
+      if(await push())break;
+    }
+    status('✓ Sincronizado '+hm(Date.now()));if(!$('dlg').open&&!document.activeElement?.matches('input,select,textarea'))render();
+  }catch(e){status('⚠ '+(e.message||'Sin conexión'),false)}
+  busy=false;if(again){again=false;sync()}
+}
+function schedulePush(){if(!syncOn())return;clearTimeout(pushT);status('Cambios sin sincronizar…');pushT=setTimeout(sync,3000)}
+function renderSet(){$('ghowner').value=S.owner||'';$('ghrepo').value=S.repo||'';$('ghtoken').value=S.token||'';if(!syncOn())status('Sin sincronizar (solo en este dispositivo)')}
+$('ghsave').onclick=()=>{S={owner:$('ghowner').value.trim(),repo:$('ghrepo').value.trim().replace(/^.*\//,''),token:$('ghtoken').value.trim()};
+  if(!syncOn()){status('Rellena los tres campos.',false);return}
+  localStorage.setItem('mh_sync',JSON.stringify(S));sha=null;sync()};
+$('ghoff').onclick=()=>{if(!confirm('¿Dejar de sincronizar este dispositivo? Tus datos se quedan aquí y en GitHub.'))return;S={owner:S.owner};localStorage.setItem('mh_sync',JSON.stringify(S));renderSet()};
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')sync();else if(pushT){clearTimeout(pushT);pushT=null;sync()}});
+
+/* ===== Inicio ===== */
+render();
+if(syncOn())sync();else $('syncdot').textContent='';
+if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
